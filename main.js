@@ -102,14 +102,14 @@ d3.csv("movies.csv").then(data => {
         .attr("class", "axis-label")
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
-        .attr("y", height + (margin.bottom / 2) + 7)
+        .attr("y", height + (margin.bottom / 2) + 10)
         .text("Year");
 
     // 7.c: Y-axis label (Average Gross)
     svgLine.append("text")
         .attr("class", "axis-label")
         .attr("transform", "rotate(-90)")
-        .attr("y", -margin.left / 2)
+        .attr("y", -margin.left / 2 - 10)
         .attr("x", -height / 2)
         .text("Average Revenue (Million $)");
 });
