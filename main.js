@@ -9,16 +9,22 @@ const svgLine = d3.select("#lineChart")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
+const svgBar = d3.select("#barChart")
+    .append("g")
+    .attr("transform", `translate(${margin.left},${margin.top})`);
+
 // 2: LOAD DATA
 d3.csv("movies.csv").then(data => {
     // 2.a: Reformat Data
     data.forEach(d => {
         d.gross = +d.gross;   // Convert score to a number
         d.year = +d.title_year;    // Convert year to a number
+        d.director = d.director_name;
+        d.score = +d.imdb_score;
     });
 
     // Check your work
-    console.log(data);
+    // console.log(data);
 
     /* ===================== LINE CHART ===================== */
 
@@ -28,8 +34,6 @@ d3.csv("movies.csv").then(data => {
         && d.year != null
         && d.year >= 2010
     );
-
-    // console.log(cleanData);
 
     // 3.b: Group by and summarize (aggregate gross by year)
     // Group by: for each... aggregate  
@@ -80,8 +84,11 @@ d3.csv("movies.csv").then(data => {
     svgLine.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(xYear)
-            .tickFormat(d3.format("d")) // remove decimals, d for date
-        );
+            .tickValues(d3.range(
+                d3.min(lineData, d => d.year),
+                d3.max(lineData, d => d.year) + 1
+            )));
+
 
     // 6.b: Y-axis (Gross)
     svgLine.append("g")
@@ -112,4 +119,67 @@ d3.csv("movies.csv").then(data => {
         .attr("y", -margin.left / 2 - 10)
         .attr("x", -height / 2)
         .text("Average Revenue (Million $)");
+
+    /* ============ BAR CHART ============= */
+    const barCleanData = data.filter(d =>
+        d.score != null
+        && d.director != "");
+
+    const barMap = d3.rollup(
+        barCleanData,
+        v => d3.mean(v, d => d.score),
+        d => d.director
+    );
+
+    const barFinalArr = Array.from(barMap,
+        ([director, score]) => ({ director, score }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 6);
+
+    console.log(barFinalArr);
+
+    const xBarScale = d3.scaleBand()
+        .domain(barFinalArr.map(d => d.director))
+        .range([0, width])
+        .padding(0.1); // Adds space between bars
+
+    const yBarScale = d3.scaleLinear()
+        .domain([0, d3.max(barFinalArr, d => d.score)])
+        .range([height, 0]);
+
+    svgBar.selectAll("rect")
+        .data(barFinalArr)
+        .enter()
+        .append("rect")
+        .attr("x", d => xBarScale(d.director))
+        .attr("y", d => yBarScale(d.score))
+        .attr("width", xBarScale.bandwidth())
+        .attr("height", d => height - yBarScale(d.score))
+        .attr("fill", "blue")
+
+    svgBar.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xBarScale));
+
+    svgBar.append("g")
+        .call(d3.axisLeft(yBarScale));
+
+    svgBar.append("text")
+        .attr("class", "title")
+        .attr("x", width / 2)
+        .attr("y", -10)
+        .text("Top 6 Directors' IMDB Scores")
+
+    svgBar.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + (margin.bottom / 2) + 10)
+        .text("Director")
+
+    svgBar.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", - margin.bottom / 2)
+        .text("Score")
 });
